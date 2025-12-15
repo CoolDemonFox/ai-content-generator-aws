@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Content Generator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --bg-light: #f8fafc;
+            --bg-white: #ffffff;
+            --text-dark: #1e293b;
+            --text-gray: #64748b;
+            --border: #e2e8f0;
+            --success: #16a34a;
+            --error: #dc2626;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg-light);
+            color: var(--text-dark);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            background: var(--bg-white);
+            border-bottom: 1px solid var(--border);
+            padding: 20px 0;
+            margin-bottom: 40px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        header h1 {
+            font-size: 2em;
+            margin-bottom: 5px;
+            color: var(--primary);
+        }
+
+        header p {
+            color: var(--text-gray);
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .card {
+            background: var(--bg-white);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        .card h2 {
+            font-size: 1.3em;
+            margin-bottom: 20px;
+            color: var(--text-dark);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: var(--text-dark);
+        }
+
+        textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 1em;
+            font-family: inherit;
+            resize: vertical;
+            min-height: 120px;
+            transition: border-color 0.3s;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s;
+            width: 100%;
+        }
+
+        button:hover:not(:disabled) {
+            background: var(--primary-dark);
+        }
+
+        button:disabled {
+            background: #cbd5e1;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        .response-section {
+            background: #f0f9ff;
+            border: 1px solid #bfdbfe;
+            border-radius: 6px;
+            padding: 20px;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .response-section.active {
+            display: block;
+        }
+
+        .response-section h3 {
+            color: var(--primary);
+            margin-bottom: 12px;
+        }
+
+        .response-text {
+            line-height: 1.8;
+            color: var(--text-dark);
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .spinner {
+            border: 3px solid var(--border);
+            border-top: 3px solid var(--primary);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error {
+            background: #fee2e2;
+            border: 1px solid #fecaca;
+            color: var(--error);
+            padding: 12px;
+            border-radius: 6px;
+            margin-top: 15px;
+            display: none;
+        }
+
+        .error.active {
+            display: block;
+        }
+
+        .history-list {
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .history-item {
+            background: var(--bg-light);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .history-item:hover {
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .history-item-prompt {
+            font-weight: 600;
+            color: var(--text-dark);
+            margin-bottom: 8px;
+            font-size: 0.95em;
+        }
+
+        .history-item-time {
+            font-size: 0.85em;
+            color: var(--text-gray);
+        }
+
+        .tab-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .tab-btn {
+            background: var(--border);
+            color: var(--text-gray);
+            padding: 10px 20px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 500;
+        }
+
+        .tab-btn.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-gray);
+        }
+
+        .empty-state p {
+            margin: 0;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+
+            header h1 {
+                font-size: 1.5em;
+            }
+
+            .card {
+                padding: 20px;
+            }
+        }
+        .templates-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 10px;
+        }
+
+        .template-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 8px;
+            border-radius: 8px;
+            font-size: 0.85em;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            width: 100%;
+        }
+
+        .template-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        .template-btn .icon {
+            display: block;
+            font-size: 1.5em;
+            margin-bottom: 4px;
+        }
+
+        .edit-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .edit-btn {
+            flex: 1;
+            min-width: 100px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 6px;
+            font-size: 0.9em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .edit-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .edit-btn:active {
+            transform: translateY(0);
+        }
+
+        .edit-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>🚀 AI Content Generator</h1>
+            <p>Generate creative content powered by Google Gemini AI</p>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="main-content">
+            <!-- Generator Card -->
+            <div class="card">
+                <h2>📝 Create Content</h2>
+                
+                <!-- Prompt Templates -->
+                <div class="templates-section" style="margin-bottom: 20px;">
+                    <label style="margin-bottom: 12px;">🎨 Quick Templates:</label>
+                    <div id="templatesGrid" class="templates-grid"></div>
+                </div>
+
+                <div class="form-group">
+                    <label for="promptInput">What would you like to create?</label>
+                    <textarea id="promptInput" placeholder="E.g., Write a poem about Almaty's mountains...&#10;E.g., Create a social media post about innovation...&#10;E.g., Draft an email about a project update..."></textarea>
+                </div>
+
+                <button id="generateBtn" onclick="generateContent()">Generate Content</button>
+
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    <p>Creating your content...</p>
+                </div>
+
+                <div class="error" id="error"></div>
+
+                <div class="response-section" id="responseSection">
+                    <h3>✨ Generated Content</h3>
+                    <div class="response-text" id="responseText"></div>
+                    <!-- AI Edit Actions -->
+                    <div class="edit-actions" style="margin: 15px 0;">
+                        <button class="edit-btn" onclick="editContent('improve')" type="button">
+                            ✨ Improve
+                        </button>
+                        <button class="edit-btn" onclick="editContent('expand')" type="button">
+                            ➕ Expand
+                        </button>
+                        <button class="edit-btn" onclick="editContent('shorten')" type="button">
+                            ➖ Shorten
+                        </button>
+                        <button class="edit-btn" onclick="editContent('regenerate')" type="button">
+                            🔄 Regenerate
+                        </button>
+                    </div>
+                    <button onclick="copyToClipboard()" style="margin-top: 15px; background: var(--success);">📋 Copy to Clipboard</button>
+                </div>
+            </div>
+
+            <!-- History Card -->
+            <div class="card">
+                <h2>📚 Generation History</h2>
+                
+                <div class="tab-buttons">
+                    <button class="tab-btn active" onclick="switchTab('history')">Recent</button>
+                    <button class="tab-btn" onclick="switchTab('stats')">Stats</button>
+                </div>
+
+                <div id="history" class="tab-content active">
+                    <div class="history-list" id="historyList">
+                        <div class="empty-state">
+                            <p>No generations yet. Create your first one! 🎉</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="stats" class="tab-content">
+                    <div class="empty-state">
+                        <p id="statsText">Loading stats...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+const API_BASE = "https://vw64xcceodihv6qquwueewxup40crath.lambda-url.us-east-1.on.aws";
+let currentResponse = '';
+let history = [];
+
+const promptTemplates = [
+    {
+        icon: '📱',
+        title: 'Instagram Post',
+        text: 'Create an engaging Instagram post about [topic]. Add 3-5 relevant hashtags and a call-to-action.'
+    },
+    {
+        icon: '✉️',
+        title: 'Email Letter',
+        text: 'Write a professional email to [recipient] about [topic]. Tone: [formal/friendly].'
+    },
+    {
+        icon: '🛍️',
+        title: 'Product Description',
+        text: 'Write a compelling product description for: [product name]. Highlight key features and benefits.'
+    },
+    {
+        icon: '💡',
+        title: 'Blog Ideas',
+        text: 'Suggest 10 blog post ideas about [your niche/industry]. Provide a brief description for each idea.'
+    },
+    {
+        icon: '📊',
+        title: 'Text Summary',
+        text: 'Summarize the following text in 3-5 bullet points: [paste your text here]'
+    },
+    {
+        icon: '🎯',
+        title: 'Content Plan',
+        text: 'Create a weekly social media content plan about [topic]. Include platform, format, and posting schedule.'
+    }
+];
+
+// Initialize
+document.addEventListener('DOMContentLoaded', async () => {
+    console.log('Using API URL:', API_BASE);
+    renderTemplates();
+    await loadHistory();
+    setupEnterKey();
+});
+
+function setupEnterKey() {
+    document.getElementById('promptInput').addEventListener('keydown', (e) => {
+        if (e.ctrlKey && e.key === 'Enter') {
+            generateContent();
+        }
+    });
+}
+
+function renderTemplates() {
+    const grid = document.getElementById('templatesGrid');
+    grid.innerHTML = promptTemplates.map((template, index) => `
+        <button class="template-btn" onclick="useTemplate(${index})" type="button">
+            <span class="icon">${template.icon}</span>
+            <span>${template.title}</span>
+        </button>
+    `).join('');
+}
+
+function useTemplate(index) {
+    const template = promptTemplates[index];
+    const input = document.getElementById('promptInput');
+    input.value = template.text;
+    input.focus();
+    // Прокрутка к textarea
+    input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+async function generateContent() {
+    const prompt = document.getElementById('promptInput').value.trim();
+    const generateBtn = document.getElementById('generateBtn');
+    const loading = document.getElementById('loading');
+    const error = document.getElementById('error');
+    const responseSection = document.getElementById('responseSection');
+
+    if (!prompt) {
+        showError('Please enter a prompt');
+        return;
+    }
+
+    // UI State
+    generateBtn.disabled = true;
+    loading.classList.add('active');
+    error.classList.remove('active');
+    responseSection.classList.remove('active');
+
+    try {
+        console.log('🚀 Sending request to:', `${API_BASE}/generate`);
+        console.log('📝 Prompt:', prompt);
+        
+        const response = await fetch(`${API_BASE}/generate`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ prompt })
+        });
+
+        console.log('📡 Response status:', response.status);
+        
+        const data = await response.json();
+        console.log('📦 Response data:', data);
+
+        if (!data.success) {
+            throw new Error(data.error || 'Failed to generate content');
+        }
+
+        // Display response
+        currentResponse = data.data.response;
+        document.getElementById('responseText').textContent = currentResponse;
+        responseSection.classList.add('active');
+        console.log('✅ Content generated successfully');
+
+        // Reload history
+        await loadHistory();
+
+        // Clear input
+        document.getElementById('promptInput').value = '';
+
+    } catch (err) {
+        console.error('❌ Error:', err);
+        showError(err.message);
+    } finally {
+        generateBtn.disabled = false;
+        loading.classList.remove('active');
+    }
+}
+
+async function editContent(action) {
+    const responseText = document.getElementById('responseText').textContent;
+    const generateBtn = document.getElementById('generateBtn');
+    const loading = document.getElementById('loading');
+    const error = document.getElementById('error');
+    const editButtons = document.querySelectorAll('.edit-btn');
+    
+    if (!responseText) {
+        showError('No content to edit');
+        return;
+    }
+
+    // Create prompts for each action
+    const prompts = {
+        improve: `Improve the following text by enhancing clarity, grammar, and style while keeping the same meaning:\n\n${responseText}`,
+        expand: `Expand the following text with more details, examples, and explanations:\n\n${responseText}`,
+        shorten: `Make the following text more concise while keeping the key points:\n\n${responseText}`,
+        regenerate: `Rewrite the following text in a different way with fresh perspective:\n\n${responseText}`
+    };
+
+    const prompt = prompts[action];
+
+    // UI State
+    generateBtn.disabled = true;
+    editButtons.forEach(btn => btn.disabled = true);
+    loading.classList.add('active');
+    error.classList.remove('active');
+
+    try {
+        console.log(`🔧 ${action.toUpperCase()} action started`);
+        
+        const response = await fetch(`${API_BASE}/generate`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ prompt })
+        });
+
+        const data = await response.json();
+
+        if (!data.success) {
+            throw new Error(data.error || 'Failed to edit content');
+        }
+
+        // Display new response
+        currentResponse = data.data.response;
+        document.getElementById('responseText').textContent = currentResponse;
+        console.log(`✅ ${action.toUpperCase()} completed`);
+
+        // Reload history
+        await loadHistory();
+
+    } catch (err) {
+        console.error('❌ Error:', err);
+        showError(err.message);
+    } finally {
+        generateBtn.disabled = false;
+        editButtons.forEach(btn => btn.disabled = false);
+        loading.classList.remove('active');
+    }
+}
+
+async function loadHistory() {
+    try {
+        console.log('📚 Loading history from:', `${API_BASE}/history`);
+        
+        const response = await fetch(`${API_BASE}/history`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+
+        console.log('📡 History response status:', response.status);
+        const data = await response.json();
+        console.log('📦 History data:', data);
+
+        if (data.success && data.data) {
+            history = data.data;
+            renderHistory();
+            updateStats();
+            console.log('✅ History loaded:', history.length, 'items');
+        }
+    } catch (err) {
+        console.error('❌ Error loading history:', err);
+    }
+}
+
+function renderHistory() {
+    const historyList = document.getElementById('historyList');
+    
+    if (history.length === 0) {
+        historyList.innerHTML = '<div class="empty-state"><p>No generations yet. Create your first one! 🎉</p></div>';
+        return;
+    }
+
+    historyList.innerHTML = history.map((item, idx) => `
+        <div class="history-item" onclick="loadHistoryItem(${idx})">
+            <div class="history-item-prompt">${escapeHtml(item.userPrompt.substring(0, 60))}${item.userPrompt.length > 60 ? '...' : ''}</div>
+            <div class="history-item-time">${formatDate(item.timestamp)}</div>
+        </div>
+    `).join('');
+}
+
+function loadHistoryItem(idx) {
+    const item = history[idx];
+    document.getElementById('responseText').textContent = item.aiResponse;
+    document.getElementById('responseSection').classList.add('active');
+    currentResponse = item.aiResponse;
+    document.getElementById('promptInput').value = item.userPrompt;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function updateStats() {
+    const totalGenerations = history.length;
+    const statsText = document.getElementById('statsText');
+    
+    let totalChars = 0;
+    history.forEach(item => {
+        totalChars += (item.aiResponse || '').length;
+    });
+
+    statsText.innerHTML = `
+        <strong>📊 Your Stats</strong><br><br>
+        Total Generations: <strong>${totalGenerations}</strong><br>
+        Total Characters Generated: <strong>${totalChars.toLocaleString()}</strong><br>
+        Average Length: <strong>${totalGenerations > 0 ? Math.round(totalChars / totalGenerations) : 0} chars</strong>
+    `;
+}
+
+function copyToClipboard() {
+    if (!currentResponse) return;
+    
+    navigator.clipboard.writeText(currentResponse).then(() => {
+        alert('✅ Copied to clipboard!');
+    }).catch(() => {
+        alert('❌ Failed to copy');
+    });
+}
+
+function showError(message) {
+    const error = document.getElementById('error');
+    error.textContent = '❌ ' + message;
+    error.classList.add('active');
+}
+
+function switchTab(tab) {
+    // Update buttons
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    event.target.classList.add('active');
+
+    // Update content
+    document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+    document.getElementById(tab).classList.add('active');
+}
+
+function formatDate(timestamp) {
+    let date;
+    
+    // Если timestamp - строка ISO, добавляем 'Z' для UTC
+    if (typeof timestamp === 'string') {
+        const utcTimestamp = timestamp.endsWith('Z') ? timestamp : timestamp + 'Z';
+        date = new Date(utcTimestamp);
+    } else {
+        date = new Date(timestamp);
+    }
+    
+    const now = new Date();
+    const diff = now.getTime() - date.getTime();
+    
+    if (diff < 0) return 'В будущем';
+    if (diff < 60000) return 'Только что';
+    if (diff < 3600000) return `${Math.floor(diff / 60000)} мин назад`;
+    if (diff < 86400000) return `${Math.floor(diff / 3600000)} ч назад`;
+    
+    const options = {
+        timeZone: 'Asia/Almaty',
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    };
+    
+    return date.toLocaleString('ru-RU', options);
+}
+
+function escapeHtml(text) {
+    const map = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
+    };
+    return text.replace(/[&<>"']/g, m => map[m]);
+}
+</script>
+
+</body>
+</html>
