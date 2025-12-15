@@ -54,7 +54,7 @@ def lambda_handler(event, context):
                 }
             
             # Call Gemini API
-            api_key = 'AIzaSyC_RyVF2RXFEutI23hcEw12Kvp0Uk0zX8E'
+            api_key = 'YOUR_API_KEY_HERE'
             model_name = 'gemini-2.5-flash'
             url = f'https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}'
             
